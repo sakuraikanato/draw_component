@@ -1,5 +1,5 @@
 "use client";
-import React, { use, useRef, useState, useEffect, Dispatch, SetStateAction} from "react";
+import React, { use, useRef, useState, useEffect, Dispatch, SetStateAction } from "react";
 
 /*
 drawOption
@@ -54,36 +54,49 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
         }
     }, [isSave]);
 
-    const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const getCoordinate = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return null;
+        const rect = canvas.getBoundingClientRect();
+        let clientX: number, clientY: number;
+
+        if ('touches' in e) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+
+        x.current = clientX - rect.left;
+        y.current = clientY - rect.top;
+    };
+    const handleStart = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
         const canvas = canvasRef.current;
         const ctx = ctxRef.current;
         if (!ctx || !canvas) return;
 
-        const rect = canvas.getBoundingClientRect();
-        x.current = e.clientX - rect.left;
-        y.current = e.clientY - rect.top;
+        getCoordinate(e);
         isDrawingRef.current = true;
     };
 
-    const handleMouseUp = () => {
+    const handleEnd = () => {
         isDrawingRef.current = false;
     };
 
-    const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const handleMove = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
         const canvas = canvasRef.current;
         const ctx = ctxRef.current;
         if (!ctx || !canvas) return;
 
         if (!isDrawingRef.current) return;
 
-        const rect = canvas.getBoundingClientRect();
-        const newX = e.clientX - rect.left;
-        const newY = e.clientY - rect.top;
+        const oldX = x.current;
+        const oldY = y.current;
 
-        drawLine(ctx, x.current, y.current, newX, newY);
+        getCoordinate(e);
 
-        x.current = newX;
-        y.current = newY;
+        drawLine(ctx, oldX, oldY, x.current, y.current);
     };
 
     // 線を描く関数
@@ -158,9 +171,12 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
                     width={1280}
                     height={720}
                     className="absolute top-0 left-0 border-white"
-                    onMouseDown={handleMouseDown}
-                    onMouseUp={handleMouseUp}
-                    onMouseMove={handleMouseMove}
+                    onMouseDown={handleStart}
+                    onMouseUp={handleEnd}
+                    onMouseMove={handleMove}
+                    onTouchStart={handleStart}
+                    onTouchEnd={handleEnd}
+                    onTouchMove={handleMove}
                 ></canvas>
             </div>
         </div>
