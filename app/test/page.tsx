@@ -11,7 +11,7 @@ export default function Page() {
 
     return (
         <div className="w-[1280px] mx-auto">
-            <Draw className="mb-40" src="./reo.jpg" penColor={penColor} drawOption={drawOption} lineWidth={lineWidth} isSave={isSave} setImgData={setImgData} />
+            <Draw className="mb-40" src="/ru-ku1.jpg" penColor={penColor} drawOption={drawOption} lineWidth={lineWidth} isSave={isSave} setImgData={setImgData} />
             <select name="penColor" id="penColor" value={penColor} onChange={(e) => setPenColor(e.target.value)}>
                 <option value="white">White</option>
                 <option value="black">Black</option>
