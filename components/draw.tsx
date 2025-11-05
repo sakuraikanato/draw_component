@@ -20,7 +20,6 @@ interface DrawProps {
 }
 
 export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWidth = 3, isSave, setImgData }: DrawProps) => {
-    const [canvasSize, setCanvasSize] = useState({ width: 1280, height: 720 });
     const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imgCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -45,17 +44,7 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
         const img = new Image();
         img.src = src;
         img.onload = () => {
-            const imgwidth = img.naturalWidth;
-            const imgheight = img.naturalHeight;
-
-            imgCanvas.width = imgwidth;
-            imgCanvas.height = imgheight;
-            canvas.width = imgwidth;
-            canvas.height = imgheight;
-
-            setCanvasSize({ width: imgwidth, height: imgheight });
-
-            imgCtx.drawImage(img, 0, 0, imgwidth, imgheight);
+            imgCtx.drawImage(img, 0, 0, imgCanvas.width, imgCanvas.height);
         };
     }, []);
 
@@ -168,28 +157,22 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
 
     return (
         <div className={className}>
-            <div className={`relative w-full`}
-                style={{
-                    maxHeight: `80vh`, // ビューポート高さの80%
-                    aspectRatio: `${canvasSize.width} / ${canvasSize.height}`,
-                }}
-            >
+            <div className="relative w-[1280px] h-[720px]">
                 {/* 背景画像用Canvas */}
                 <canvas
                     ref={imgCanvasRef}
-                    width={canvasSize.width}
-                    height={canvasSize.height}
-                    className="absolute top-0 left-0 border-white w-full h-full object-contain"
+                    width={1280}
+                    height={720}
+                    className="absolute top-0 left-0 border-white"
                 ></canvas>
                 {/* 描画用Canvas */}
                 <canvas
                     ref={canvasRef}
-                    width={canvasSize.width}
-                    height={canvasSize.height}
-                    className="absolute top-0 left-0 border-white w-full h-full object-contain"
+                    width={1280}
+                    height={720}
+                    className="absolute top-0 left-0 border-white"
                     onMouseDown={handleStart}
                     onMouseUp={handleEnd}
-                    onMouseLeave={handleEnd}
                     onMouseMove={handleMove}
                     onTouchStart={handleStart}
                     onTouchEnd={handleEnd}
