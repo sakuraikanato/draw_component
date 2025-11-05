@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState, useEffect, Dispatch, SetStateAction } from "react";
+import React, { use, useRef, useState, useEffect, Dispatch, SetStateAction } from "react";
 
 /*
 drawOption
@@ -20,8 +20,6 @@ interface DrawProps {
 }
 
 export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWidth = 3, isSave, setImgData }: DrawProps) => {
-    const [canvasSize, setCanvasSize] = useState({ width: 1280, height: 720 });
-    const [isImgLoading, setIsImgLoading] = useState(true);
     const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imgCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -46,45 +44,9 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
         const img = new Image();
         img.src = src;
         img.onload = () => {
-            const imgWidth = img.naturalWidth;
-            const imgHeight = img.naturalHeight;
-
-            let finalWidth: number = imgWidth;
-            let finalHeight: number = imgHeight;
-
-            if (imgWidth > 1280 || imgHeight > 720) {
-                const widthRatio = 1280 / imgWidth;
-                const heightRatio = 720 / imgHeight;
-                const scale = Math.min(widthRatio, heightRatio);
-
-                finalWidth = imgWidth * scale;
-                finalHeight = imgHeight * scale;
-
-                finalWidth = Math.floor(imgWidth * scale);  // ✅ Math.floor追加
-                finalHeight = Math.floor(imgHeight * scale);
-            } else {
-                finalWidth = imgWidth;
-                finalHeight = imgHeight;
-            }
-
-            imgCanvas.width = finalWidth;
-            imgCanvas.height = finalHeight;
-            canvas.width = finalWidth;
-            canvas.height = finalHeight;
-
-            setCanvasSize({ width: finalWidth, height: finalHeight });
-
-            console.log("画像描画完了:", finalWidth, "x", finalHeight);
-
-            imgCtx.drawImage(img, 0, 0, finalWidth, finalHeight);
-
-            setIsImgLoading(false);
+            imgCtx.drawImage(img, 0, 0, imgCanvas.width, imgCanvas.height);
         };
-
-        img.onerror = () => {
-            console.error("画像の読み込みに失敗しました:", src);
-        }
-    }, [src]);
+    }, []);
 
     useEffect(() => {
         if (isSave) {
@@ -154,7 +116,6 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
         ctx.strokeStyle = penColor;
         ctx.lineWidth = lineWidth;
         ctx.lineCap = "round";
-        ctx.lineJoin = "round";
         // ----------------------
 
         ctx.beginPath();
@@ -196,21 +157,20 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
 
     return (
         <div className={className}>
-            {isImgLoading && <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 text-white z-10">画像を読み込み中...</div>}
-            <div className="mx-auto relative max-w-full max-h-[80vh]" style={{ aspectRatio: `${canvasSize.width} / ${canvasSize.height}`, width: canvasSize.width , height: canvasSize.height }}>
+            <div className="relative w-[1280px] h-[720px]">
                 {/* 背景画像用Canvas */}
                 <canvas
                     ref={imgCanvasRef}
-                    width={canvasSize.width}
-                    height={canvasSize.height}
-                    className="absolute top-0 left-0 border-red-700 border-2 w-full h-full"
+                    width={1280}
+                    height={720}
+                    className="absolute top-0 left-0 border-white"
                 ></canvas>
                 {/* 描画用Canvas */}
                 <canvas
                     ref={canvasRef}
-                    width={canvasSize.width}
-                    height={canvasSize.height}
-                    className="absolute top-0 left-0 border-white border-1 w-full h-full"
+                    width={1280}
+                    height={720}
+                    className="absolute top-0 left-0 border-white"
                     onMouseDown={handleStart}
                     onMouseUp={handleEnd}
                     onMouseMove={handleMove}
