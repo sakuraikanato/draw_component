@@ -20,6 +20,8 @@ interface DrawProps {
 }
 
 export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWidth = 3, isSave, setImgData }: DrawProps) => {
+    const [viewCanvasSize, setViewCanvasSize] = useState({width:1280, height:720});
+    const [imgSize, setImgSize] = useState({width:1280, height:720});
     const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imgCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -44,6 +46,27 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
         const img = new Image();
         img.src = src;
         img.onload = () => {
+            // 画像のアスペクト比を維持して表示サイズを計算
+            const imgWidth = img.width;
+            const imgHeight = img.height;
+            setImgSize({width: imgWidth, height: imgHeight});
+            let finalWidth = 1280;
+            let finalHeight = 720;
+
+            if (imgHeight > 720) {
+                finalHeight = 720;
+                finalWidth = (imgWidth / imgHeight) * finalHeight;
+            } else if (finalWidth > 1280) {
+                finalWidth = 1280;
+                finalHeight = (imgHeight / imgWidth) * finalWidth;
+            } else {
+                finalWidth = imgWidth;
+                finalHeight = imgHeight;
+            }
+
+            setViewCanvasSize({width: finalWidth, height: finalHeight});
+
+            // 画像をcanvasに描画
             imgCtx.drawImage(img, 0, 0, imgCanvas.width, imgCanvas.height);
         };
     }, []);
@@ -68,8 +91,12 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
             clientY = e.clientY;
         }
 
-        x.current = clientX - rect.left;
-        y.current = clientY - rect.top;
+        // 座標変換
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+
+        x.current = (clientX - rect.left) * scaleX;
+        y.current = (clientY - rect.top) * scaleY;
     };
     const handleStart = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
         const canvas = canvasRef.current;
@@ -133,16 +160,16 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
 
         // 結合用canvas
         const mergedCanvas = document.createElement("canvas");
-        mergedCanvas.width = 1280;
-        mergedCanvas.height = 720;
+        mergedCanvas.width = imgSize.width;
+        mergedCanvas.height = imgSize.height;
         const mergedCtx = mergedCanvas.getContext("2d");
         if (!mergedCtx) return;
 
         // 背景画像
-        mergedCtx.drawImage(imgCanvas, 0, 0);
+        mergedCtx.drawImage(imgCanvas, 0, 0, mergedCanvas.width, mergedCanvas.height);
 
         // 描画内容
-        mergedCtx.drawImage(drawCanvas, 0, 0);
+        mergedCtx.drawImage(drawCanvas, 0, 0, mergedCanvas.width, mergedCanvas.height);
 
         // formDataに変換して親コンポーネントに渡す
         mergedCanvas.toBlob((blob) => {
@@ -157,20 +184,28 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
 
     return (
         <div className={className}>
-            <div className="relative w-[1280px] h-[720px]">
+            <div className="mx-auto relative " style={{ width: `${viewCanvasSize.width}px`, height: `${viewCanvasSize.height}px` }}>
                 {/* 背景画像用Canvas */}
                 <canvas
                     ref={imgCanvasRef}
                     width={1280}
                     height={720}
-                    className="absolute top-0 left-0 border-white"
+                    className="absolute top-0 left-0"
+                    style={{
+                        width: `${viewCanvasSize.width}px`,
+                        height: `${viewCanvasSize.height}px`
+                    }}
                 ></canvas>
                 {/* 描画用Canvas */}
                 <canvas
                     ref={canvasRef}
                     width={1280}
                     height={720}
-                    className="absolute top-0 left-0 border-white"
+                    className="absolute top-0 left-0 border-white border-1"
+                    style={{
+                        width: `${viewCanvasSize.width}px`,
+                        height: `${viewCanvasSize.height}px`
+                    }}
                     onMouseDown={handleStart}
                     onMouseUp={handleEnd}
                     onMouseMove={handleMove}
