@@ -41,7 +41,7 @@ export default function Page() {
 
 
     return (
-        <div className="w-[1280px] mx-auto">
+        <div className="w-[1280px] mx-auto fixed top-0 left-0 right-0 bottom-0 overflow-hidden">
             <Draw 
                 className="mb-40" 
                 src="/ru-ku1.jpg" 
@@ -81,6 +81,7 @@ export default function Page() {
                     >
                         <option value={1}>Pen</option>
                         <option value={2}>Eraser</option>
+                        <option value={3}>Glow</option>
                     </select>
                 </div>
 

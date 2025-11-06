@@ -137,6 +137,11 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
             case 2: // 消しゴム
                 ctx.globalCompositeOperation = "destination-out";
                 break;
+            case 3: // グロー
+                ctx.globalCompositeOperation = "source-over";
+                ctx.shadowColor = penColor;
+                ctx.shadowBlur = 10;
+                break;
             default:
                 ctx.globalCompositeOperation = "source-over";
         }
@@ -150,6 +155,15 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
         ctx.lineTo(x2, y2);
         ctx.stroke();
         ctx.closePath();
+        if (drawOption === 3) {
+            ctx.strokeStyle = "#FFFFFF";
+            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.closePath();
+        };
     };
 
     // 画像保存
