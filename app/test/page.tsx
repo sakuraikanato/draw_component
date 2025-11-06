@@ -41,7 +41,7 @@ export default function Page() {
 
 
     return (
-        <div className="w-[1280px] mx-auto fixed top-0 left-0 right-0 bottom-0 overflow-hidden">
+        <div className="w-[1280px] mx-auto overflow-hidden">
             <Draw 
                 className="mb-40" 
                 src="/ru-ku1.jpg" 
