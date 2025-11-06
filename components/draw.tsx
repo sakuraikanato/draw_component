@@ -30,6 +30,24 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
     const y = useRef(0);
 
     useEffect(() => {
+        // タッチムーブイベントを無効化
+        const preventScroll = (e: TouchEvent) => {
+            // Canvas上でのタッチのみスクロールを防止
+            const target = e.target as HTMLElement;
+            if (target.tagName === 'CANVAS') {
+                e.preventDefault();
+            }
+        };
+
+        // passive: false で preventDefault() を有効化
+        document.addEventListener('touchmove', preventScroll, { passive: false });
+
+        return () => {
+            document.removeEventListener('touchmove', preventScroll);
+        };
+    }, []);
+
+    useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext("2d");
@@ -103,12 +121,20 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
         const ctx = ctxRef.current;
         if (!ctx || !canvas) return;
 
+        if ('touches' in e) {
+            e.preventDefault();
+        }
+
         getCoordinate(e);
         isDrawingRef.current = true;
     };
 
-    const handleEnd = () => {
+    const handleEnd = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
         isDrawingRef.current = false;
+
+        if ('touches' in e) {
+            e.preventDefault();
+        }
     };
 
     const handleMove = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
