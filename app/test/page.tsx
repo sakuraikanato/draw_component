@@ -43,7 +43,7 @@ export default function Page() {
     return (
         <div className="w-[1280px] mx-auto overflow-hidden">
             <Draw 
-                className="mb-40" 
+                className="mb-20" 
                 src="/ru-ku1.jpg" 
                 penColor={penColor} 
                 drawOption={drawOption} 
@@ -52,9 +52,9 @@ export default function Page() {
                 setImgData={setImgData} 
             />
             
-            <div className="space-y-4">
+            <div className="space-y-4 touchable flex">
                 <div>
-                    <label htmlFor="penColor" className="mr-2">ペンの色:</label>
+                    <label htmlFor="penColor" className="mr-2 mx-2">ペンの色:</label>
                     <select 
                         name="penColor" 
                         id="penColor" 
@@ -71,27 +71,28 @@ export default function Page() {
                 </div>
 
                 <div>
-                    <label htmlFor="drawOption" className="mr-2">モード:</label>
+                    <label htmlFor="drawOption" className="mr-2 mx-2">モード:</label>
                     <select 
                         name="drawOption" 
                         id="drawOption" 
                         value={drawOption} 
                         onChange={(e) => setDrawOption(Number(e.target.value))}
-                        className="border p-2"
+                        className="border p-2 mx-2"
                     >
+                        <option value={0}>Eraser</option>
                         <option value={1}>Pen</option>
-                        <option value={2}>Eraser</option>
-                        <option value={3}>Glow</option>
+                        <option value={2}>Glow</option>
                     </select>
                 </div>
 
                 <div>
-                    <label htmlFor="lineWidth" className="mr-2">線の太さ: {lineWidth}</label>
+                    <label htmlFor="lineWidth" className="mr-2 mx-2">線の太さ: {lineWidth}</label>
                     <input 
                         type="range" 
                         id="lineWidth" 
                         min="1" 
                         max="50" 
+                        className="mr-2"
                         value={lineWidth} 
                         onChange={(e) => setLineWidth(Number(e.target.value))} 
                     />

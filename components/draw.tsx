@@ -55,8 +55,12 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
         // タッチムーブイベントを無効化
         // passive: false で preventDefault() を有効化
         const preventScroll = (e: TouchEvent) => {
-            e.preventDefault();
-        }
+            const target = e.target as HTMLElement;
+            // Canvas以外の要素でもスクロールを防止
+            if (target.tagName === 'CANVAS') {
+                e.preventDefault();
+            }
+        };
         document.addEventListener('touchmove', preventScroll, { passive: false });
 
 
