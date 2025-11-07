@@ -2,11 +2,30 @@
 import React, { use, useRef, useState, useEffect, Dispatch, SetStateAction } from "react";
 
 /*
-drawOption
+-- 説明 --
+
+-- className --
+任意のCSSクラス名
+----------------
+-- drawOption --
 
 1 = ペン
 2 = 消しゴム
 3 = グロー
+----------------
+-- penColor --
+whiteなどの色文字列または#ffffffのようなカラーコード
+----------------
+-- lineWidth --
+線の太さ（数値）
+----------------
+-- isSave --
+親コンポーネントから渡される保存トリガー用フラグ(state)
+----------------
+-- setImgData --
+親コンポーネントに画像データを渡すための関数(stateのsetter)
+----------------
+
 
 */
 
@@ -34,16 +53,12 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
 
     useEffect(() => {
         // タッチムーブイベントを無効化
-        const preventScroll = (e: TouchEvent) => {
-            // Canvas上でのタッチのみスクロールを防止
-            const target = e.target as HTMLElement;
-            if (target.tagName === 'CANVAS') {
-                e.preventDefault();
-            }
-        };
-
         // passive: false で preventDefault() を有効化
+        const preventScroll = (e: TouchEvent) => {
+            e.preventDefault();
+        }
         document.addEventListener('touchmove', preventScroll, { passive: false });
+
 
         return () => {
             document.removeEventListener('touchmove', preventScroll);
@@ -165,13 +180,13 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
 
         // -----描画オプション-----
         switch (drawOption) {
+            case 0: // 消しゴム
+                ctx.globalCompositeOperation = "destination-out";
+                break;
             case 1: // ペン
                 ctx.globalCompositeOperation = "source-over";
                 break;
-            case 2: // 消しゴム
-                ctx.globalCompositeOperation = "destination-out";
-                break;
-            case 3: // グロー
+            case 2: // グロー
                 ctx.globalCompositeOperation = "source-over";
                 ctx.shadowColor = penColor;
                 ctx.shadowBlur = 2 * lineWidth;
@@ -189,7 +204,7 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
         ctx.lineTo(x2, y2);
         ctx.stroke();
         ctx.closePath();
-        if (drawOption === 3) {
+        if (drawOption === 2) {
             ctx.strokeStyle = "#FFFFFF";
             ctx.shadowBlur = 0;
             ctx.beginPath();
@@ -249,7 +264,7 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
                     ref={canvasRef}
                     width={1280}
                     height={720}
-                    className="absolute top-0 left-0 border-white border-1"
+                    className="absolute top-0 left-0 border-white border-2"
                     style={{
                         width: `${viewCanvasSize.width}px`,
                         height: `${viewCanvasSize.height}px`
