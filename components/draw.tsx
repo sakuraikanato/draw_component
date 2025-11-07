@@ -6,6 +6,7 @@ drawOption
 
 1 = ペン
 2 = 消しゴム
+3 = グロー
 
 */
 
@@ -28,6 +29,8 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
     const isDrawingRef = useRef(false);
     const x = useRef(0);
     const y = useRef(0);
+    const oldX = useRef(0);
+    const oldY = useRef(0);
 
     useEffect(() => {
         // タッチムーブイベントを無効化
@@ -70,12 +73,14 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
             setImgSize({width: imgWidth, height: imgHeight});
             let finalWidth = 1280;
             let finalHeight = 720;
+            let maxWidth = window.innerWidth - 200;
+            let maxHeight = window.innerHeight - 200;
 
-            if (imgHeight > 720) {
-                finalHeight = 720;
+            if (imgHeight > maxHeight) {
+                finalHeight = maxHeight;
                 finalWidth = (imgWidth / imgHeight) * finalHeight;
-            } else if (finalWidth > 1280) {
-                finalWidth = 1280;
+            } else if (finalWidth > maxWidth) {
+                finalWidth = maxWidth;
                 finalHeight = (imgHeight / imgWidth) * finalWidth;
             } else {
                 finalWidth = imgWidth;
@@ -112,6 +117,9 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
         // 座標変換
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
+
+        oldX.current = x.current;
+        oldY.current = y.current;
 
         x.current = (clientX - rect.left) * scaleX;
         y.current = (clientY - rect.top) * scaleY;
@@ -166,7 +174,7 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
             case 3: // グロー
                 ctx.globalCompositeOperation = "source-over";
                 ctx.shadowColor = penColor;
-                ctx.shadowBlur = 10;
+                ctx.shadowBlur = 2 * lineWidth;
                 break;
             default:
                 ctx.globalCompositeOperation = "source-over";
