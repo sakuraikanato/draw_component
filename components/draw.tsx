@@ -39,17 +39,24 @@ interface DrawProps {
     setImgData: Dispatch<SetStateAction<FormData | null>>;
 }
 
+
 export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWidth = 3, isSave, setImgData }: DrawProps) => {
     const [viewCanvasSize, setViewCanvasSize] = useState({width:1280, height:720});
     const [imgSize, setImgSize] = useState({width:1280, height:720});
+
+    // canvas関連 
     const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imgCanvasRef = useRef<HTMLCanvasElement>(null);
+
+    // 描画中フラグ
     const isDrawingRef = useRef(false);
+
+    // 座標系
     const x = useRef(0);
     const y = useRef(0);
-    const oldX = useRef(0);
-    const oldY = useRef(0);
+    const olderX = useRef({old:0, older:0});
+    const olderY = useRef({old:0, older:0});
 
     useEffect(() => {
         // タッチムーブイベントを無効化
@@ -137,8 +144,11 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
 
-        oldX.current = x.current;
-        oldY.current = y.current;
+        // 以前の座標を保存
+        olderX.current.older = olderX.current.old;
+        olderX.current.old = x.current;
+        olderY.current.older = olderY.current.old;
+        olderY.current.old = y.current;
 
         x.current = (clientX - rect.left) * scaleX;
         y.current = (clientY - rect.top) * scaleY;
@@ -153,6 +163,10 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
         }
 
         getCoordinate(e);
+        olderX.current.old = x.current;
+        olderY.current.old = y.current;
+        olderX.current.older = x.current;
+        olderY.current.older = y.current;
         isDrawingRef.current = true;
     };
 
@@ -186,19 +200,21 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
         switch (drawOption) {
             case 0: // 消しゴム
                 ctx.globalCompositeOperation = "destination-out";
+                ctx.strokeStyle = penColor;
                 break;
             case 1: // ペン
                 ctx.globalCompositeOperation = "source-over";
+                ctx.strokeStyle = penColor;
                 break;
             case 2: // グロー
                 ctx.globalCompositeOperation = "source-over";
+                ctx.strokeStyle = "#ffffff";
                 ctx.shadowColor = penColor;
                 ctx.shadowBlur = 2 * lineWidth;
                 break;
             default:
                 ctx.globalCompositeOperation = "source-over";
         }
-        ctx.strokeStyle = penColor;
         ctx.lineWidth = lineWidth;
         ctx.lineCap = "round";
         // ----------------------
@@ -209,11 +225,10 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
         ctx.stroke();
         ctx.closePath();
         if (drawOption === 2) {
-            ctx.strokeStyle = "#FFFFFF";
-            ctx.shadowBlur = 0;
+            ctx.shadowBlur = 0; // シャドウ効果をリセット
             ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
+            ctx.moveTo(olderX.current.older, olderY.current.older);
+            ctx.lineTo(olderX.current.old, olderY.current.old);
             ctx.stroke();
             ctx.closePath();
         };
