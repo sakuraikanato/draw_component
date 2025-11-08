@@ -36,10 +36,25 @@ interface DrawProps {
     drawOption: number;
     lineWidth: number;
     isSave: boolean;
+    undo?: boolean;
+    redo?: boolean;
     setImgData: Dispatch<SetStateAction<FormData | null>>;
 }
 
-export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWidth = 3, isSave, setImgData }: DrawProps) => {
+
+interface Stroke {
+    x: number;
+    y: number;
+}[];
+
+interface ItemHistory {
+    penColor: string;
+    drawOption: number;
+    lineWidth: number;
+    coordinates: Stroke[];
+}[];
+
+export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWidth = 3, isSave, undo, redo, setImgData }: DrawProps) => {
     const [viewCanvasSize, setViewCanvasSize] = useState({width:1280, height:720});
     const [imgSize, setImgSize] = useState({width:1280, height:720});
     const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -50,6 +65,8 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
     const y = useRef(0);
     const oldX = useRef(0);
     const oldY = useRef(0);
+    const historyRef = useRef<ItemHistory[]>([]);
+    const strokeRef = useRef<Stroke[]>([]);
 
     useEffect(() => {
         // タッチムーブイベントを無効化
@@ -152,6 +169,8 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
             e.preventDefault();
         }
 
+        strokeRef.current = [];
+
         getCoordinate(e);
         isDrawingRef.current = true;
     };
@@ -162,6 +181,14 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
         if ('touches' in e) {
             e.preventDefault();
         }
+
+        // 描画履歴に追加
+        historyRef.current.push({
+            penColor: penColor,
+            drawOption: drawOption,
+            lineWidth: lineWidth,
+            coordinates: strokeRef.current,
+        });
     };
 
     const handleMove = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
