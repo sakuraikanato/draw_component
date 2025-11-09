@@ -22,6 +22,15 @@ whiteなどの色文字列または#ffffffのようなカラーコード
 -- isSave --
 親コンポーネントから渡される保存トリガー用フラグ(state)
 ----------------
+-- isUndo --
+親コンポーネントから渡される元に戻すトリガー用フラグ(state)
+----------------
+-- isRedo --
+親コンポーネントから渡されるやり直しトリガー用フラグ(state)
+----------------
+-- isClear --
+親コンポーネントから渡されるクリアトリガー用フラグ(state)
+----------------
 -- setImgData --
 親コンポーネントに画像データを渡すための関数(stateのsetter)
 ----------------
@@ -36,15 +45,18 @@ interface DrawProps {
     drawOption: number;
     lineWidth: number;
     isSave: boolean;
-    undo?: boolean;
-    redo?: boolean;
+    isUndo?: boolean;
+    isRedo?: boolean;
+    isClear?: boolean;
     setImgData: Dispatch<SetStateAction<FormData | null>>;
 }
 
 
 interface Stroke {
-    x: number;
-    y: number;
+    start_x: number;
+    start_y: number;
+    end_x: number;
+    end_y: number;
 }[];
 
 interface ItemHistory {
@@ -54,7 +66,7 @@ interface ItemHistory {
     coordinates: Stroke[];
 }[];
 
-export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWidth = 3, isSave, undo, redo, setImgData }: DrawProps) => {
+export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWidth = 3, isSave, isUndo, isRedo, isClear, setImgData }: DrawProps) => {
     const [viewCanvasSize, setViewCanvasSize] = useState({width:1280, height:720});
     const [imgSize, setImgSize] = useState({width:1280, height:720});
 
@@ -67,12 +79,13 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
     const isDrawingRef = useRef(false);
 
     // 座標系
+    const olderX = useRef({old:0, older:0});
+    const olderY = useRef({old:0, older:0});
     const x = useRef(0);
     const y = useRef(0);
     const historyRef = useRef<ItemHistory[]>([]);
+    const redoHistoryRef = useRef<ItemHistory[]>([]);
     const strokeRef = useRef<Stroke[]>([]);
-    const olderX = useRef({old:0, older:0});
-    const olderY = useRef({old:0, older:0});
 
     useEffect(() => {
         // タッチムーブイベントを無効化
@@ -136,11 +149,24 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
         };
     }, []);
 
+    // セーブ、クリア、undo、redo用のuseEffect
     useEffect(() => {
         if (isSave) {
             saveImage();
         }
     }, [isSave]);
+
+    useEffect(() => {
+        clearCanvas(true)
+    }, [isClear])
+
+    useEffect(() => {
+        undoRedo(true)
+    }, [isUndo])
+
+    useEffect(() => {
+        undoRedo(false)
+    }, [isRedo])
 
     const getCoordinate = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
         const canvas = canvasRef.current;
@@ -169,6 +195,8 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
         x.current = (clientX - rect.left) * scaleX;
         y.current = (clientY - rect.top) * scaleY;
     };
+
+    // 描画開始
     const handleStart = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
         const canvas = canvasRef.current;
         const ctx = ctxRef.current;
@@ -186,8 +214,11 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
         olderX.current.older = x.current;
         olderY.current.older = y.current;
         isDrawingRef.current = true;
+
+        strokeRef.current = []
     };
 
+    // 描画終了
     const handleEnd = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
         isDrawingRef.current = false;
 
@@ -202,8 +233,10 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
             lineWidth: lineWidth,
             coordinates: strokeRef.current,
         });
+        console.log(drawOption)
     };
 
+    // 描画中
     const handleMove = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
         const canvas = canvasRef.current;
         const ctx = ctxRef.current;
@@ -211,12 +244,24 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
 
         if (!isDrawingRef.current) return;
 
-        const oldX = x.current;
-        const oldY = y.current;
-
         getCoordinate(e);
 
-        drawLine(ctx, oldX, oldY, x.current, y.current);
+        drawLine(ctx, olderX.current.old, olderY.current.old, x.current, y.current);
+        strokeRef.current.push({
+            start_x: olderX.current.old,
+            start_y: olderY.current.old,
+            end_x: x.current,
+            end_y: y.current,
+        });
+        if (drawOption === 2) {
+            // グローの場合、直前の線分も描画
+            strokeRef.current.push({
+                start_x: olderX.current.older,
+                start_y: olderY.current.older,
+                end_x: olderX.current.old,
+                end_y: olderY.current.old,
+            });
+        }
     };
 
     // 線を描く関数
@@ -250,6 +295,8 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
         ctx.lineTo(x2, y2);
         ctx.stroke();
         ctx.closePath();
+
+        // グロー効果のために直前の線分も描画
         if (drawOption === 2) {
             ctx.shadowBlur = 0; // シャドウ効果をリセット
             ctx.beginPath();
@@ -289,6 +336,60 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
 
         }, "image/png");
     };
+    
+    const undoRedo = (isUndoed: boolean) => {
+        const canvas = canvasRef.current;
+        const ctx = ctxRef.current;
+        if (!ctx || !canvas) return;
+        
+        // 描画内容をクリア
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // 履歴から最後の操作を取り出してredo履歴に保存
+        if (isUndoed){
+            const lastAction = historyRef.current.pop();
+            if (lastAction) {
+                redoHistoryRef.current.push(lastAction);
+            }
+            console.log("undoしたお")
+        } else {
+            const redoAction = redoHistoryRef.current.pop();
+            if (redoAction) {
+                historyRef.current.push(redoAction);
+            }
+            console.log("redoしたお")
+        }
+        reDraw(isUndoed);
+    }
+
+    const reDraw = (isUndoed: boolean) => {
+        const canvas = canvasRef.current;
+        const ctx = ctxRef.current;
+        if (!ctx || !canvas) return;
+        const history = isUndoed ? historyRef.current : redoHistoryRef.current;
+
+        clearCanvas();
+        // 履歴を元に再描画
+        history.forEach((item) => {
+            console.log(item)
+            penColor = item.penColor;
+            drawOption = item.drawOption;
+            lineWidth = item.lineWidth;
+            item.coordinates.forEach((coord) => {
+                drawLine(ctx, coord.start_x, coord.start_y, coord.end_x, coord.end_y)
+            })
+        })
+    }
+
+    const clearCanvas = (isReset = false) => {
+        const canvas = canvasRef.current;
+        const ctx = ctxRef.current;
+        if (!ctx || !canvas) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (isReset) {
+            historyRef.current = [];
+        }
+    }
 
     return (
         <div className={className}>

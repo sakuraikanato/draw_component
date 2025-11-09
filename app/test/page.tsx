@@ -12,6 +12,11 @@ export default function Page() {
     const [isSave, setIsSave] = useState(false);
     const [imgPath, setImgPath] = useState("");
     const [isSaving, setIsSaving] = useState(false); // ✅ 保存中フラグ
+    
+    // ✅ 新規追加: clear, undo, redo 用のフラグ
+    const [isClear, setIsClear] = useState(false);
+    const [isUndo, setIsUndo] = useState(false);
+    const [isRedo, setIsRedo] = useState(false);
 
     useEffect(() => {
         if (imgData) {
@@ -39,6 +44,48 @@ export default function Page() {
         setIsSave(false); // 保存フラグをリセット
     };
 
+    // ✅ 新規追加: Clear ボタンのハンドラー
+    const handleClear = () => {
+        const confirmed = window.confirm('描画内容をすべてクリアしますか？');
+        if (confirmed) {
+            setIsClear(!isClear);
+        }
+    };
+
+    // ✅ 新規追加: Undo ボタンのハンドラー
+    const handleUndo = () => {
+        setIsUndo(!isUndo);
+    };
+
+    // ✅ 新規追加: Redo ボタンのハンドラー
+    const handleRedo = () => {
+        setIsRedo(!isRedo);
+    };
+
+    // ✅ 新規追加: キーボードショートカット（Ctrl+Z / Cmd+Z で Undo）
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Ctrl+Z または Cmd+Z で Undo
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                handleUndo();
+            }
+            // Ctrl+Shift+Z または Cmd+Shift+Z で Redo
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) {
+                e.preventDefault();
+                handleRedo();
+            }
+            // Ctrl+Y または Cmd+Y でも Redo
+            if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+                e.preventDefault();
+                handleRedo();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
 
     return (
         <div className="w-[1280px] mx-auto overflow-hidden">
@@ -48,7 +95,10 @@ export default function Page() {
                 penColor={penColor} 
                 drawOption={drawOption} 
                 lineWidth={lineWidth} 
-                isSave={isSave} 
+                isSave={isSave}
+                isClear={isClear} // ✅ 新規追加
+                isUndo={isUndo}   // ✅ 新規追加
+                isRedo={isRedo}   // ✅ 新規追加
                 setImgData={setImgData} 
             />
             
@@ -98,8 +148,9 @@ export default function Page() {
                     />
                 </div>
 
+                {/* ✅ 既存のボタン（変更なし） */}
                 <button 
-                    onClick={() => {setIsSave(true);}}
+                    onClick={() => {setIsSave(true); setIsSaving(true);}}
                     disabled={isSaving}
                     className={`px-6 py-2 rounded text-white ${
                         isSaving 
@@ -107,7 +158,34 @@ export default function Page() {
                             : 'bg-blue-500 hover:bg-blue-600'
                     }`}
                 >
-                    {isSaving ? '保存中...' : '画像を保存'}
+                    {isSaving ? '保存中...' : '📸 画像を保存'}
+                </button>
+
+                {/* ✅ 新規追加: Undo ボタン */}
+                <button 
+                    onClick={handleUndo}
+                    className="px-6 py-2 rounded text-white bg-orange-500 hover:bg-orange-600"
+                    title="元に戻す (Ctrl+Z)"
+                >
+                    ↩️ Undo
+                </button>
+
+                {/* ✅ 新規追加: Redo ボタン */}
+                <button 
+                    onClick={handleRedo}
+                    className="px-6 py-2 rounded text-white bg-purple-500 hover:bg-purple-600"
+                    title="やり直す (Ctrl+Shift+Z)"
+                >
+                    ↪️ Redo
+                </button>
+
+                {/* ✅ 新規追加: Clear ボタン */}
+                <button 
+                    onClick={handleClear}
+                    className="px-6 py-2 rounded text-white bg-red-500 hover:bg-red-600"
+                    title="すべてクリア"
+                >
+                    🗑️ Clear
                 </button>
             </div>
 
