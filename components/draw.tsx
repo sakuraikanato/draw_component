@@ -374,8 +374,16 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
             penColor = item.penColor;
             drawOption = item.drawOption;
             lineWidth = item.lineWidth;
-            item.coordinates.forEach((coord) => {
-                drawLine(ctx, coord.start_x, coord.start_y, coord.end_x, coord.end_y)
+            item.coordinates.forEach((coord, index) => {
+                if (index % 2 === 1 && drawOption === 2){
+                    olderX.current.old = coord.end_x;
+                    olderY.current.old = coord.end_y;
+
+                    olderX.current.older = coord.start_x;
+                    olderY.current.older = coord.start_y;
+                } else {
+                    drawLine(ctx, coord.start_x, coord.start_y, coord.end_x, coord.end_y)
+                }
             })
         })
     }
@@ -387,7 +395,7 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         if (isReset) {
-            historyRef.current = [];
+            historyRef.current.splice(0)
         }
     }
 
