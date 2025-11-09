@@ -206,6 +206,7 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
             e.preventDefault();
         }
 
+        redoHistoryRef.current.splice(0)
         strokeRef.current = [];
 
         getCoordinate(e);
@@ -346,12 +347,14 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         // 履歴から最後の操作を取り出してredo履歴に保存
         if (isUndoed){
+            console.log(historyRef.current)
             const lastAction = historyRef.current.pop();
             if (lastAction) {
                 redoHistoryRef.current.push(lastAction);
             }
             console.log("undoしたお")
         } else {
+            console.log(redoHistoryRef.current)
             const redoAction = redoHistoryRef.current.pop();
             if (redoAction) {
                 historyRef.current.push(redoAction);
@@ -365,7 +368,7 @@ export const Draw = ({ className,src, penColor = "white", drawOption = 1, lineWi
         const canvas = canvasRef.current;
         const ctx = ctxRef.current;
         if (!ctx || !canvas) return;
-        const history = isUndoed ? historyRef.current : redoHistoryRef.current;
+        const history = historyRef.current;
 
         clearCanvas();
         // 履歴を元に再描画
