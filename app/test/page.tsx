@@ -6,7 +6,7 @@ import Image from "next/image";
 
 export default function Page() {
     const [penColor, setPenColor] = useState("white");
-    const [imgData, setImgData] = useState<FormData | null>(null);
+    // const [imgData, setImgData] = useState<FormData | null>(null);
     const [drawOption, setDrawOption] = useState(1);
     const [lineWidth, setLineWidth] = useState(3);
     const [imgPath, setImgPath] = useState("");
@@ -15,7 +15,8 @@ export default function Page() {
     const ChildRef = useRef<ChildRef | null>(null);
 
     const handleSave = async () => {
-        await ChildRef.current?.setImg();
+        const imgData: FormData | null = await ChildRef.current?.setImg() ?? null;
+        console.log()
         if (!imgData) return;
 
         const response = await fetch('/api/save_img', {
@@ -85,7 +86,6 @@ export default function Page() {
                 drawOption={drawOption} 
                 lineWidth={lineWidth} 
                 ref={ChildRef}
-                setImgData={setImgData} 
             />
             
             <div className="space-y-4 touchable flex">

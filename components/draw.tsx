@@ -37,7 +37,7 @@ whiteなどの色文字列または#ffffffのようなカラーコード
 */
 
 export interface ChildRef {
-    setImg: () => void,
+    setImg: () => Promise<FormData | null>,
     clearCanvas: () => void,
     undoRedo: (isundo: boolean) => void,
 }
@@ -47,7 +47,6 @@ interface DrawProps {
     penColor?: string;
     drawOption: number;
     lineWidth: number;
-    setImgData: Dispatch<SetStateAction<FormData | null>>;
 }
 
 
@@ -65,7 +64,7 @@ interface ItemHistory {
     coordinates: Stroke[];
 };
 
-export const Draw = forwardRef<ChildRef, DrawProps>(function Draw({ className,src, penColor = "white", drawOption = 1, lineWidth = 3, setImgData }, ref) {
+export const Draw = forwardRef<ChildRef, DrawProps>(function Draw({ className,src, penColor = "white", drawOption = 1, lineWidth = 3}, ref) {
     const [viewCanvasSize, setViewCanvasSize] = useState({width:1280, height:720});
     const [imgSize, setImgSize] = useState({width:1280, height:720});
 
@@ -87,17 +86,17 @@ export const Draw = forwardRef<ChildRef, DrawProps>(function Draw({ className,sr
     const strokeRef = useRef<Stroke[]>([]);
 
     // 画像保存
-    const saveImage = useCallback(() => {
+    const saveImage = useCallback(async (): Promise<FormData | null> => {
         const imgCanvas = imgCanvasRef.current;
         const drawCanvas = canvasRef.current;
-        if (!imgCanvas || !drawCanvas) return;
+        if (!imgCanvas || !drawCanvas) return null;
 
         // 結合用canvas
         const mergedCanvas = document.createElement("canvas");
         mergedCanvas.width = imgSize.width;
         mergedCanvas.height = imgSize.height;
         const mergedCtx = mergedCanvas.getContext("2d");
-        if (!mergedCtx) return;
+        if (!mergedCtx) return null;
 
         // 背景画像
         mergedCtx.drawImage(imgCanvas, 0, 0, mergedCanvas.width, mergedCanvas.height);
@@ -105,16 +104,23 @@ export const Draw = forwardRef<ChildRef, DrawProps>(function Draw({ className,sr
         // 描画内容
         mergedCtx.drawImage(drawCanvas, 0, 0, mergedCanvas.width, mergedCanvas.height);
 
-        // formDataに変換して親コンポーネントに渡す
-        mergedCanvas.toBlob((blob) => {
-            if (!blob) return;
+        // formDataに変換して親コンポーネントに渡す        
+        // mergedCanvas.toBlob((blob) => {
+        //     if (!blob) return;
 
-            const formData = new FormData();
-            formData.append("image", blob, `drawing-${Date.now()}.png`);
-            setImgData(formData);
+        //     formData.append("image", blob, `drawing-${Date.now()}.png`);
+        // }, "image/png");
 
-        }, "image/png");
-    }, [imgSize.width, imgSize.height, setImgData]);
+        const blob = await new Promise<Blob | null>((resolve) => {
+            mergedCanvas.toBlob((b) => resolve(b), "img/ping")
+        })
+
+        if (!blob) return null;
+
+        const formData = new FormData();
+        formData.append("image", blob, `drawing-${Date.now()}.png`);
+        return formData;
+    }, [imgSize.width, imgSize.height]);
 
     // 線を描く関数
     const drawLine = useCallback((
@@ -339,8 +345,8 @@ const reDraw = useCallback(() => {
 
         // 親から実行する関数の定義
     useImperativeHandle(ref, () => ({
-        setImg() {
-            saveImage();
+        async setImg(): Promise<FormData | null> {
+            return await saveImage();
         },
         clearCanvas() {
             clearCanvas(true);
