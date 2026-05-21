@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState, useEffect, useCallback, Dispatch, SetStateAction, useImperativeHandle, forwardRef } from "react";
+import React, { useRef, useState, useEffect, useCallback, useImperativeHandle, forwardRef } from "react";
 
 /*
 -- 説明 --
