@@ -1,6 +1,6 @@
 "use client"
-import { Draw } from "@/components/draw"
-import { useState, useEffect } from "react";
+import { Draw, ChildRef } from "@/components/draw"
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 
 
@@ -9,23 +9,13 @@ export default function Page() {
     const [imgData, setImgData] = useState<FormData | null>(null);
     const [drawOption, setDrawOption] = useState(1);
     const [lineWidth, setLineWidth] = useState(3);
-    const [isSave, setIsSave] = useState(false);
     const [imgPath, setImgPath] = useState("");
     const [isSaving, setIsSaving] = useState(false); // ✅ 保存中フラグ
-    
-    // ✅ 新規追加: clear, undo, redo 用のフラグ
-    const [isClear, setIsClear] = useState(false);
-    const [isUndo, setIsUndo] = useState(false);
-    const [isRedo, setIsRedo] = useState(false);
 
-    useEffect(() => {
-        if (imgData) {
-            // 画像データが更新されたら保存処理を実行
-            handleSave();
-        }
-    }, [imgData]);
+    const ChildRef = useRef<ChildRef | null>(null);
 
     const handleSave = async () => {
+        await ChildRef.current?.setImg();
         if (!imgData) return;
 
         const response = await fetch('/api/save_img', {
@@ -41,25 +31,24 @@ export default function Page() {
         }
 
         setIsSaving(false); // ✅ 保存処理が完了したらフラグをリセット
-        setIsSave(false); // 保存フラグをリセット
     };
 
-    // ✅ 新規追加: Clear ボタンのハンドラー
+        // Undo ボタンのハンドラー
+    const handleUndo = () => {
+        ChildRef.current?.undoRedo(true)
+    };
+
+    // Redo ボタンのハンドラー
+    const handleRedo = () => {
+        ChildRef.current?.undoRedo(false);
+    };
+
+    // Clear ボタンのハンドラー
     const handleClear = () => {
         const confirmed = window.confirm('描画内容をすべてクリアしますか？');
         if (confirmed) {
-            setIsClear(!isClear);
+            ChildRef.current?.clearCanvas();
         }
-    };
-
-    // ✅ 新規追加: Undo ボタンのハンドラー
-    const handleUndo = () => {
-        setIsUndo(!isUndo);
-    };
-
-    // ✅ 新規追加: Redo ボタンのハンドラー
-    const handleRedo = () => {
-        setIsRedo(!isRedo);
     };
 
     // ✅ 新規追加: キーボードショートカット（Ctrl+Z / Cmd+Z で Undo）
@@ -88,17 +77,14 @@ export default function Page() {
 
 
     return (
-        <div className="w-[1280px] mx-auto overflow-hidden">
+        <div className="w-7xl mx-auto overflow-hidden">
             <Draw 
                 className="mb-20" 
                 src="/ru-ku1.jpg" 
                 penColor={penColor} 
                 drawOption={drawOption} 
                 lineWidth={lineWidth} 
-                isSave={isSave}
-                isClear={isClear} // ✅ 新規追加
-                isUndo={isUndo}   // ✅ 新規追加
-                isRedo={isRedo}   // ✅ 新規追加
+                ref={ChildRef}
                 setImgData={setImgData} 
             />
             
@@ -148,9 +134,9 @@ export default function Page() {
                     />
                 </div>
 
-                {/* ✅ 既存のボタン（変更なし） */}
+                {/* 画像保存ボタン */}
                 <button 
-                    onClick={() => {setIsSave(true); setIsSaving(true);}}
+                    onClick={() => {handleSave(); setIsSaving(true);}}
                     disabled={isSaving}
                     className={`px-6 py-2 rounded text-white ${
                         isSaving 
